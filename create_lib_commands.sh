@@ -12,6 +12,7 @@ mkdir armnn-dist/armnn/lib
 cp $BASEDIR/armnn/build/libarmnn.so.$ARMNN_MAJOR_VERSION.$ARMNN_MINOR_VERSION $BASEDIR/armnn-dist/armnn/lib
 ln -s libarmnn.so.$ARMNN_MAJOR_VERSION.$ARMNN_MINOR_VERSION $BASEDIR/armnn-dist/armnn/lib/libarmnn.so.$ARMNN_MAJOR_VERSION
 ln -s libarmnn.so.$ARMNN_MAJOR_VERSION $BASEDIR/armnn-dist/armnn/lib/libarmnn.so
+ln -s libarmnn.so.$ARMNN_MAJOR_VERSION $BASEDIR/armnn-dist/armnn/lib/libarmnn.so.27
 cp $BASEDIR/armnn/build/libarmnnTfLiteParser.so.$TFLITE_PARSER_MAJOR_VERSION.$TFLITE_PARSER_MINOR_VERSION $BASEDIR/armnn-dist/armnn/lib
 ln -s libarmnnTfLiteParser.so.$TFLITE_PARSER_MAJOR_VERSION.$TFLITE_PARSER_MINOR_VERSION $BASEDIR/armnn-dist/armnn/lib/libarmnnTfLiteParser.so.$TFLITE_PARSER_MAJOR_VERSION
 ln -s libarmnnTfLiteParser.so.$TFLITE_PARSER_MAJOR_VERSION $BASEDIR/armnn-dist/armnn/lib/libarmnnTfLiteParser.so
@@ -50,3 +51,6 @@ cp -r $BASEDIR/armnn/build/src/backends/backendsCommon/test/backendsTestPath9/ $
 
 mkdir -p $BASEDIR/armnn-dist/src/backends/dynamic/reference
 cp $BASEDIR/armnn/build/src/backends/dynamic/reference/Arm_CpuRef_backend.so $BASEDIR/armnn-dist/src/backends/dynamic/reference/
+
+# tar -zcvf armnn_lib.tar.gz armnn-dist/
+# sudo cp armm_cos.tar.gz /var/www/html/armnn_cos.tar.gz

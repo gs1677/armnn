@@ -630,6 +630,8 @@ TfLiteParserImpl::TfLiteParserImpl(
       &TfLiteParserImpl::ParseResizeNearestNeighbor;
   m_ParserFunctions[tflite::BuiltinOperator_RSQRT] =
       &TfLiteParserImpl::ParseRsqrt;
+  m_ParserFunctions[tflite::BuiltinOperator_SQRT] =
+      &TfLiteParserImpl::ParseSqrt;
   m_ParserFunctions[tflite::BuiltinOperator_SHAPE] =
       &TfLiteParserImpl::ParseShape;
   m_ParserFunctions[tflite::BuiltinOperator_SLICE] =
@@ -3549,6 +3551,8 @@ void TfLiteParserImpl::ParseGather(size_t subgraphIndex, size_t operatorIndex) {
   armnn::TensorInfo inputTensorInfo = ToTensorInfo(inputs[0]);
   armnn::TensorInfo indicesTensorInfo = ToTensorInfo(inputs[1]);
   TensorInfo outputTensorInfo = ToTensorInfo(outputs[0], true);
+  std::cout << "Input shape: " << inputTensorInfo.GetShape() << std::endl;
+  std::cout << "Output shape: " << outputTensorInfo.GetShape() << std::endl;
 
   armnn::GatherDescriptor gatherDescriptor;
 
@@ -3568,7 +3572,7 @@ void TfLiteParserImpl::ParseGather(size_t subgraphIndex, size_t operatorIndex) {
         axis, inputDimensions, inputDimensions, CHECK_LOCATION().AsString()));
   }
   if (outputDimensions !=
-      static_cast<unsigned int>(inputDimensions) + indicesDimensions - 1) {
+      static_cast<unsigned int>(inputDimensions) + indicesDimensions - 2) {
     throw ParseException(
         fmt::format("Operation has invalid output dimensions: {} Output must "
                     "be an ({} + {} - 1) -D tensor {}",
@@ -3797,6 +3801,11 @@ void TfLiteParserImpl::ParseNeg(size_t subgraphIndex, size_t operatorIndex) {
 void TfLiteParserImpl::ParseRsqrt(size_t subgraphIndex, size_t operatorIndex) {
   ParseElementwiseUnary(subgraphIndex, operatorIndex,
                         armnn::UnaryOperation::Rsqrt);
+}
+
+void TfLiteParserImpl::ParseSqrt(size_t subgraphIndex, size_t operatorIndex) {
+  ParseElementwiseUnary(subgraphIndex, operatorIndex,
+                        armnn::UnaryOperation::Sqrt);
 }
 
 void TfLiteParserImpl::ParseElementwiseUnary(size_t subgraphIndex,

@@ -1,3 +1,5 @@
+mkdir build
+cd build
 cmake .. -DCMAKE_LINKER=/usr/bin/arm-linux-gnueabihf-ld \
     -DCMAKE_C_COMPILER=/usr/bin/arm-linux-gnueabihf-gcc \
     -DCMAKE_CXX_COMPILER=/usr/bin/arm-linux-gnueabihf-g++ \
@@ -13,4 +15,5 @@ cmake .. -DCMAKE_LINKER=/usr/bin/arm-linux-gnueabihf-ld \
     -DARMCOMPUTENEON=1 \
     -DARMNNREF=1 \
     -DBUILD_TF_LITE_PARSER=1 \
+    -DBUILD_UNIT_TESTS=0 \
     -DTF_LITE_GENERATED_PATH=$BASEDIR/tflite
