@@ -233,6 +233,43 @@ void CheckBufferSize(TfLiteParserImpl::BufferRawPtr bufferPtr,
   }
 }
 
+tflite::BuiltinOperator GetOpCode(const TfLiteParserImpl::ModelPtr &model,
+                                  size_t subgraphIndex, size_t operatorIndex) {
+  const auto &operatorPtr =
+      model->subgraphs[subgraphIndex]->operators[operatorIndex];
+  auto opcodeIndex = operatorPtr->opcode_index;
+
+// work around the introduction of the deprecated_builtin_code introduced in 2.4
+// in a backwards compatible manner
+#if defined(ARMNN_POST_TFLITE_2_3)
+  auto opcode = std::max(
+      model->operator_codes[opcodeIndex]->builtin_code,
+      static_cast<tflite::BuiltinOperator>(
+          model->operator_codes[opcodeIndex]->deprecated_builtin_code));
+#else
+  auto opcode = model->operator_codes[opcodeIndex]->builtin_code;
+#endif
+  return opcode;
+}
+
+std::vector<unsigned int> GetUIntBuffer(armnn::TensorInfo info,
+                                        const TfLiteParserImpl::ModelPtr &model,
+                                        size_t bufferIndex) {
+  TfLiteParserImpl::BufferRawPtr bufferPtr =
+      TfLiteParserImpl::GetBuffer(model, bufferIndex);
+  std::vector<unsigned int> buffer(info.GetNumElements());
+
+  if (info.GetDataType() == DataType::Signed32) {
+    ::memcpy(buffer.data(), bufferPtr->data.data(), bufferPtr->data.size());
+  } else if (info.GetDataType() == DataType::Signed64) {
+    std::vector<uint64_t> uint64Buffer(info.GetNumElements());
+    ::memcpy(uint64Buffer.data(), bufferPtr->data.data(),
+             bufferPtr->data.size());
+    buffer.assign(std::begin(uint64Buffer), std::end(uint64Buffer));
+  }
+  return buffer;
+}
+
 #define CHECK_BUFFER_SIZE(BUFFER_PTR, TENSOR_INFO, BUFFER_ID)                  \
   CheckBufferSize(BUFFER_PTR, TENSOR_INFO, BUFFER_ID, CHECK_LOCATION())
 
@@ -608,6 +645,8 @@ TfLiteParserImpl::TfLiteParserImpl(
   m_ParserFunctions[tflite::BuiltinOperator_PACK] =
       &TfLiteParserImpl::ParsePack;
   m_ParserFunctions[tflite::BuiltinOperator_PAD] = &TfLiteParserImpl::ParsePad;
+  m_ParserFunctions[tflite::BuiltinOperator_PADV2] =
+      &TfLiteParserImpl::ParsePad;
   m_ParserFunctions[tflite::BuiltinOperator_PRELU] =
       &TfLiteParserImpl::ParsePrelu;
   m_ParserFunctions[tflite::BuiltinOperator_QUANTIZE] =
@@ -2260,25 +2299,80 @@ void TfLiteParserImpl::ParsePad(size_t subgraphIndex, size_t operatorIndex) {
   CHECK_VALID_SIZE(outputs.size(), 1);
 
   armnn::TensorInfo inputTensorInfo = ToTensorInfo(inputs[0]);
-
   armnn::TensorInfo padTensorInfo = ToTensorInfo(inputs[1]);
-  BufferRawPtr bufferPtr = GetBuffer(m_Model, inputs[1]->buffer);
 
-  std::vector<unsigned int> padBuffer(padTensorInfo.GetNumElements());
-  ::memcpy(padBuffer.data(), bufferPtr->data.data(),
-           padTensorInfo.GetNumBytes());
+  std::vector<unsigned int> padBuffer =
+      GetUIntBuffer(padTensorInfo, m_Model, inputs[1]->buffer);
 
   size_t step = 2;
   armnn::PadDescriptor desc;
-  if (inputTensorInfo.IsQuantized()) {
-    desc.m_PadValue =
-        static_cast<float>(inputTensorInfo.GetQuantizationOffset());
+  auto opcode = GetOpCode(m_Model, subgraphIndex, operatorIndex);
+
+  if (opcode == tflite::BuiltinOperator_PAD) {
+    CHECK_VALID_SIZE(inputs.size(), 2);
+
+    if (inputTensorInfo.IsQuantized()) {
+      desc.m_PadValue =
+          static_cast<float>(inputTensorInfo.GetQuantizationOffset());
+    }
+  } else if (opcode == tflite::BuiltinOperator_PADV2) {
+    CHECK_VALID_SIZE(inputs.size(), 3);
+
+    armnn::TensorInfo padValueTensorInfo = ToTensorInfo(inputs[2]);
+
+    if (padValueTensorInfo.GetNumElements() != 1) {
+      ARMNN_THROW_PARSE_EXCEPTION(
+          "Multiple padding values are not supported in PADV2");
+    }
+    BufferRawPtr padValueBufferPtr = GetBuffer(m_Model, inputs[2]->buffer);
+
+    // Get the pad value from the input tensor
+    if (padValueBufferPtr->data.size() > 0) {
+      switch (padValueTensorInfo.GetDataType()) {
+      case armnn::DataType::Float32: {
+        std::vector<float> padValueBuffer(padValueTensorInfo.GetNumElements());
+        ::memcpy(padValueBuffer.data(), padValueBufferPtr->data.data(),
+                 padValueBufferPtr->data.size());
+        desc.m_PadValue = padValueBuffer[0];
+        break;
+      }
+      case armnn::DataType::QAsymmU8: {
+        std::vector<uint8_t> padValueBuffer(
+            padValueTensorInfo.GetNumElements());
+        ::memcpy(padValueBuffer.data(), padValueBufferPtr->data.data(),
+                 padValueBufferPtr->data.size());
+        desc.m_PadValue = armnn::Dequantize<uint8_t>(
+            padValueBuffer[0], padValueTensorInfo.GetQuantizationScale(),
+            padValueTensorInfo.GetQuantizationOffset());
+        break;
+      }
+      case armnn::DataType::QAsymmS8:
+      case armnn::DataType::QSymmS8: {
+        std::vector<int8_t> padValueBuffer(padValueTensorInfo.GetNumElements());
+        ::memcpy(padValueBuffer.data(), padValueBufferPtr->data.data(),
+                 padValueBufferPtr->data.size());
+        desc.m_PadValue = armnn::Dequantize<int8_t>(
+            padValueBuffer[0], padValueTensorInfo.GetQuantizationScale(),
+            padValueTensorInfo.GetQuantizationOffset());
+        break;
+      }
+      default:
+        ARMNN_THROW_PARSE_EXCEPTION("Unsupported DataType");
+      }
+    } else if (inputTensorInfo.IsQuantized()) {
+      desc.m_PadValue =
+          static_cast<float>(inputTensorInfo.GetQuantizationOffset());
+    }
   }
+
   for (unsigned int i = 0; i < padTensorInfo.GetNumElements() / step; ++i) {
     desc.m_PadList.emplace_back(padBuffer[i * step], padBuffer[i * step + 1]);
   }
 
-  auto layerName = fmt::format("Pad:{}:{}", subgraphIndex, operatorIndex);
+  auto layerName =
+      (opcode == tflite::BuiltinOperator_PAD)
+          ? fmt::format("Pad:{}:{}", subgraphIndex, operatorIndex)
+          : fmt::format("PadV2:{}:{}", subgraphIndex, operatorIndex);
   TensorInfo outputTensorInfo = ToTensorInfo(outputs[0], true);
 
   IConnectableLayer *layer = m_Network->AddPadLayer(desc, layerName.c_str());
@@ -3572,7 +3666,7 @@ void TfLiteParserImpl::ParseGather(size_t subgraphIndex, size_t operatorIndex) {
         axis, inputDimensions, inputDimensions, CHECK_LOCATION().AsString()));
   }
   if (outputDimensions !=
-      static_cast<unsigned int>(inputDimensions) + indicesDimensions - 2) {
+      static_cast<unsigned int>(inputDimensions) + indicesDimensions - 1) {
     throw ParseException(
         fmt::format("Operation has invalid output dimensions: {} Output must "
                     "be an ({} + {} - 1) -D tensor {}",
