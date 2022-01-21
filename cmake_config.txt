@@ -1,0 +1,16 @@
+cmake .. -DCMAKE_LINKER=/usr/bin/arm-linux-gnueabihf-ld \
+    -DCMAKE_C_COMPILER=/usr/bin/arm-linux-gnueabihf-gcc \
+    -DCMAKE_CXX_COMPILER=/usr/bin/arm-linux-gnueabihf-g++ \
+    -DCMAKE_C_COMPILER_FLAGS=-fPIC \
+    -DCMAKE_CXX_FLAGS=-mfpu=neon \
+    -DARMCOMPUTE_ROOT=$BASEDIR/ComputeLibrary \
+    -DARMCOMPUTE_BUILD_DIR=$BASEDIR/ComputeLibrary/build \
+    -DBUILD_ONNX_PARSER=1 \
+    -DONNX_GENERATED_SOURCES=$BASEDIR/onnx \
+    -DFLATBUFFERS_ROOT=$BASEDIR/flatbuffers-arm32 \
+    -DFLATC_DIR=$BASEDIR/flatbuffers-1.12.0/build \
+    -DPROTOBUF_ROOT=$BASEDIR/protobuf-arm \
+    -DARMCOMPUTENEON=1 \
+    -DARMNNREF=1 \
+    -DBUILD_TF_LITE_PARSER=1 \
+    -DTF_LITE_GENERATED_PATH=$BASEDIR/tflite
