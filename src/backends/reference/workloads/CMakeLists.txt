@@ -179,6 +179,7 @@ list(APPEND armnnRefBackendWorkloads_sources
     Resize.hpp
     Rsqrt.hpp
     Sin.hpp
+    Cos.hpp
     Slice.cpp
     Slice.hpp
     Softmax.cpp

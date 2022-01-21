@@ -531,6 +531,11 @@ bool ClLayerSupport::IsElementwiseUnarySupported(const TensorInfo& input,
                                            reasonIfUnsupported,
                                            input,
                                            output);
+        case UnaryOperation::Cos:
+            FORWARD_WORKLOAD_VALIDATE_FUNC(ClCosWorkloadValidate,
+                                           reasonIfUnsupported,
+                                           input,
+                                           output);
         default:
             return false;
     }

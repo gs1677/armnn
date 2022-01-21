@@ -80,6 +80,7 @@ constexpr char const* GetUnaryOperationAsCString(UnaryOperation operation)
         case UnaryOperation::Log:        return "Log";
         case UnaryOperation::LogicalNot: return "LogicalNot";
         case UnaryOperation::Sin:        return "Sin";
+        case UnaryOperation::Cos:        return "Cos";
         default:                         return "Unknown";
     }
 }

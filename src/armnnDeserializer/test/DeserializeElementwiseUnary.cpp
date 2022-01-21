@@ -162,6 +162,15 @@ struct SimpleSinFixture : ElementwiseUnaryFixture
     {}
 };
 
+struct SimpleCosFixture : ElementwiseUnaryFixture
+{
+    SimpleCosFixture() : ElementwiseUnaryFixture("[ 1, 2, 2, 2 ]", // inputShape
+                                                 "[ 1, 2, 2, 2 ]", // outputShape
+                                                 "Float32",        // dataType
+                                                 "Cos")            // unaryOperation
+    {}
+};
+
 FIXTURE_TEST_CASE(SimpleSinTest, SimpleSinFixture)
 {
     RunTest<4, armnn::DataType::Float32>(

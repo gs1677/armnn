@@ -127,6 +127,8 @@ armnnSerializer::UnaryOperation GetFlatBufferUnaryOperation(armnn::UnaryOperatio
             return armnnSerializer::UnaryOperation::UnaryOperation_Log;
         case armnn::UnaryOperation::Sin:
             return armnnSerializer::UnaryOperation::UnaryOperation_Sin;
+        case armnn::UnaryOperation::Cos:
+            return armnnSerializer::UnaryOperation::UnaryOperation_Cos;
         default:
             throw armnn::InvalidArgumentException("Unary operation unknown");
     }

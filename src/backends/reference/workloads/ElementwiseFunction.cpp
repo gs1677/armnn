@@ -13,6 +13,7 @@
 #include "Log.hpp"
 #include "Rsqrt.hpp"
 #include "Sin.hpp"
+#include "Cos.hpp"
 #include "Sqrt.hpp"
 
 
@@ -90,6 +91,7 @@ template struct armnn::ElementwiseUnaryFunction<armnn::log<float>>;
 template struct armnn::ElementwiseUnaryFunction<std::negate<float>>;
 template struct armnn::ElementwiseUnaryFunction<armnn::rsqrt<float>>;
 template struct armnn::ElementwiseUnaryFunction<armnn::sin<float>>;
+template struct armnn::ElementwiseUnaryFunction<armnn::cos<float>>;
 template struct armnn::ElementwiseUnaryFunction<armnn::sqrt<float>>;
 
 // Logical Unary

@@ -432,6 +432,8 @@ std::unique_ptr<IWorkload> ClWorkloadFactory::CreateElementwiseUnary(const Eleme
         }
         case UnaryOperation::Sin:
             return std::make_unique<ClSinWorkload>(descriptor, info, m_CLCompileContext);
+        case UnaryOperation::Cos:
+            return std::make_unique<ClCosWorkload>(descriptor, info, m_CLCompileContext);
         default:
             return nullptr;
     }

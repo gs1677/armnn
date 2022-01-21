@@ -572,6 +572,8 @@ armnn::UnaryOperation ToUnaryOperation(armnnSerializer::UnaryOperation operation
             return armnn::UnaryOperation::Log;
         case armnnSerializer::UnaryOperation::UnaryOperation_Sin:
             return armnn::UnaryOperation::Sin;
+        case armnnSerializer::UnaryOperation::UnaryOperation_Cos:
+            return armnn::UnaryOperation::Cos;
         default:
             throw armnn::InvalidArgumentException("Unary operation unknown");
     }

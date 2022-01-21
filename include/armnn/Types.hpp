@@ -117,7 +117,8 @@ enum class UnaryOperation
     Neg        = 4,
     LogicalNot = 5,
     Log        = 6,
-    Sin        = 7
+    Sin        = 7,
+    Cos        = 8
 };
 
 enum class PoolingAlgorithm
